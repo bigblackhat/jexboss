@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-u","http://127.0.0.1:8080/"]
+            "args": ["-u","http://127.0.0.1:8080/","--jboss-login","tomcat:tomcat"]
         }
     ]
 }
